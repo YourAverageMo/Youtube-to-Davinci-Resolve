@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 import yt_dlp
 
+# NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
 # TODO emojis in video_title may cause issues. keep an eye on it
 # TODO move global vars to a json file
 # TODO before that convert global vars to dict so its easier to incorporate json later
@@ -69,7 +70,7 @@ def sanitize_filename(filename: str) -> str:
     return filename
 
 
-def download_video(url: str, video_title: str) -> Path:
+def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
     # set/make temp dir for download
     temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
     try:
@@ -80,10 +81,19 @@ def download_video(url: str, video_title: str) -> Path:
         )
         exit()
 
+    # determine if clip is sfx
+    if is_sfx:
+        download_format = 'ba[ext=m4a]/ba[ext=aac]'  # only audio, save space
+        print("is sfx")
+    else:
+        download_format = 'bv+ba[ext=m4a]/ba[ext=aac]'  # best video + m4a or aac
+
+    # run yt-dlp in cmd
     result = subprocess.run([
         'yt-dlp',
+        '--no-playlist',  # currently no playlists maybe future
         '--format',
-        'bv+ba[ext=m4a]/ba[ext=aac]',  # best video + m4a or aac
+        download_format,
         '--remux-video',
         'mp4',
         '-P',
@@ -93,6 +103,7 @@ def download_video(url: str, video_title: str) -> Path:
         url,
     ])
 
+    # find file and return it
     if result.returncode == 0:
         # Find the downloaded file in the temp_dir
         file = list(temp_dir.glob(f"{video_title}*"))[0]
