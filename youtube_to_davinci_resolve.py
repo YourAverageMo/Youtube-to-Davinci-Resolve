@@ -7,8 +7,24 @@ UNWANTED_WORDS = [
     'Sound', 'effect', 'for editing', 'editing', '(dl in desc)', '-', '()',
     "''"
 ]
-# yes im using asmongold clip... bite me
+# yes im using an asmongold clip... bite me
 TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
+
+
+def get_video_title(url: str) -> str:
+    # Define download options with no actual download
+    ydl_opts = {
+        'quiet': True,  # Suppress all output
+        'noplaylist': True,  # Only get info for a single video
+    }
+
+    # Create a YoutubeDL object
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(
+            url, download=False)  # Extract info without downloading
+
+    # Return the title
+    return info.get('title', 'No title found')
 
 
 def sanitize_filename(filename: str) -> str:
