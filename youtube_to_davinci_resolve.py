@@ -1,5 +1,8 @@
 import subprocess
 import re
+import tempfile
+from pathlib import Path
+import yt_dlp
 
 # TODO move global vars to a json file
 
@@ -12,18 +15,14 @@ TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
 
 
 def get_video_title(url: str) -> str:
-    # Define download options with no actual download
     ydl_opts = {
-        'quiet': True,  # Suppress all output
-        'noplaylist': True,  # Only get info for a single video
+        'quiet': True,
+        'noplaylist': True,
     }
-
-    # Create a YoutubeDL object
+    # Extract info without downloading
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(
-            url, download=False)  # Extract info without downloading
+        info = ydl.extract_info(url, download=False)
 
-    # Return the title
     return info.get('title', 'No title found')
 
 
