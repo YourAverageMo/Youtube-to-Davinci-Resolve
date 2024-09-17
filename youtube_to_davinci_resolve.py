@@ -5,13 +5,19 @@ from pathlib import Path
 import yt_dlp
 
 # TODO move global vars to a json file
-
+# TODO before that convert global vars to dict so its easier to incorporate json later
 UNWANTED_WORDS = [
     'Sound', 'effect', 'for editing', 'editing', '(dl in desc)', '-', '()',
     "''"
 ]
+SFX_KEYWORDS = [
+    'sfx',
+    'sound effect',
+    'sound effects',
+]
 # yes im using an asmongold clip... bite me
 TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
+AUTO_DELETE_TEMP = False
 
 
 def get_video_title(url: str) -> str:
@@ -24,6 +30,10 @@ def get_video_title(url: str) -> str:
         info = ydl.extract_info(url, download=False)
 
     return info.get('title', 'No title found')
+
+
+def is_sfx(video_title: str) -> bool:
+    return any(word.lower() in video_title.lower() for word in SFX_KEYWORDS)
 
 
 def sanitize_filename(filename: str) -> str:
@@ -48,7 +58,7 @@ def sanitize_filename(filename: str) -> str:
     return filename
 
 
-def get_link() -> str:
+def get_clipboard() -> str:
     """gets last item in users clipboard."""
     link = subprocess.getoutput("powershell.exe -Command Get-Clipboard")
     return link
