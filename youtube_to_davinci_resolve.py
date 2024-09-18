@@ -84,16 +84,6 @@ def sanitize_filename(filename: str) -> str:
 
 
 def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
-    # set/make temp dir for download
-    temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
-    try:
-        temp_dir.mkdir(exist_ok=True)
-    except FileNotFoundError:
-        print(
-            f"Your temp folder ({temp_dir.parent}) was not found. For caution, the script will not create it. please double check your temp dir and try again.\nExiting script..."
-        )
-        exit()
-
     # determine if clip is sfx
     if is_sfx:
         download_format = 'ba[ext=m4a]/ba[ext=aac]'  # only audio, save space
@@ -127,12 +117,8 @@ def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
 # TODO in gui make --margin adjustable
 # FIXME save into temp folder instead. the converted file goes into save_dir
 def trim_video(video_path: Path) -> Path:
-
-    # check if save path exists
-    save_dir = SFX_SAVE_DIR if SFX_SAVE_DIR.exists(
-    ) else Path().home() / "Downloads"
     # declare save file location, name, & extension
-    video_path_trimmed = save_dir / video_path.name
+    video_path_trimmed = sfx_save_dir / video_path.name
 
     # run yt-dlp in cmd
     result = subprocess.run(
@@ -143,7 +129,7 @@ def trim_video(video_path: Path) -> Path:
             '-0.05s,0s',
             '--no-open',
             '--output',
-            f"{save_dir / video_path.stem}",
+            f"{sfx_save_dir / video_path.stem}",
         ],
         cwd=fr"{video_path.parent}",
     )
@@ -152,12 +138,8 @@ def trim_video(video_path: Path) -> Path:
 
 
 def convert_sfx(video_path: Path) -> Path:
-    # check if save path exists
-    save_dir = SFX_SAVE_DIR if SFX_SAVE_DIR.exists(
-    ) else Path().home() / "Downloads"
     # declare save file location, name, & extension
-    video_path_converted = save_dir / f"{video_path.stem}.mp3"
-    print(video_path_converted)
+    video_path_converted = sfx_save_dir / f"{video_path.stem}.mp3"
 
     # run ffmpeg in cmd
     result = subprocess.run(
@@ -170,3 +152,18 @@ def convert_sfx(video_path: Path) -> Path:
     )
     if result.returncode == 0:
         return video_path_converted
+
+
+# set/make temp dir for download
+temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
+try:
+    temp_dir.mkdir(exist_ok=True)
+except FileNotFoundError:
+    print(
+        f"Your temp folder ({temp_dir.parent}) was not found. For caution, the script will not create it. please double check your temp dir and try again.\nExiting script..."
+    )
+    exit()
+
+# check if save path exists
+sfx_save_dir = SFX_SAVE_DIR if SFX_SAVE_DIR.exists(
+) else Path().home() / "Downloads"
