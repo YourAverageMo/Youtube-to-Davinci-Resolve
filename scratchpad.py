@@ -38,3 +38,31 @@ def trim_video(video_path: Path) -> Path:
         return video_path_trimmed
 
 
+def convert_sfx(video_path: Path) -> Path:
+    # check if save path exists
+    save_dir = SFX_SAVE_DIR if SFX_SAVE_DIR.exists(
+    ) else Path().home() / "Downloads"
+    # declare save file location, name, & extension
+    video_path_converted = save_dir / f"{video_path.stem}.mp3"
+    print(video_path_converted)
+
+    # run ffmpeg in cmd
+    result = subprocess.run(
+        [
+            'ffmpeg', '-i', video_path.name, '-c:a', 'libmp3lame', '-b:a',
+            '320k',
+            str(video_path_converted)
+        ],
+        cwd=fr"{video_path.parent}",
+    )
+    if result.returncode == 0:
+        return video_path_converted
+
+
+# video_title = get_video_title(TEST_LINK_SFX3)
+# is_sfx_in_video_title = is_sfx(video_title)
+# video_title = sanitize_filename(video_title)
+# video_path_download = download_video(TEST_LINK_SFX3, video_title,
+#                                      is_sfx_in_video_title)
+# video_path_trimmed = trim_video(video_path_download)
+# video_path_converted = convert_sfx(video_path_trimmed)

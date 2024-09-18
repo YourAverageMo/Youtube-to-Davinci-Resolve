@@ -5,7 +5,6 @@ from pathlib import Path
 import yt_dlp
 
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
-# TODO convert_sfx() function
 # TODO delete_file() function.
 # TODO emojis in video_title may cause issues. keep an eye on it
 # TODO move global vars to a json file
@@ -152,4 +151,22 @@ def trim_video(video_path: Path) -> Path:
         return video_path_trimmed
 
 
+def convert_sfx(video_path: Path) -> Path:
+    # check if save path exists
+    save_dir = SFX_SAVE_DIR if SFX_SAVE_DIR.exists(
+    ) else Path().home() / "Downloads"
+    # declare save file location, name, & extension
+    video_path_converted = save_dir / f"{video_path.stem}.mp3"
+    print(video_path_converted)
 
+    # run ffmpeg in cmd
+    result = subprocess.run(
+        [
+            'ffmpeg', '-i', video_path.name, '-c:a', 'libmp3lame', '-b:a',
+            '320k',
+            str(video_path_converted)
+        ],
+        cwd=fr"{video_path.parent}",
+    )
+    if result.returncode == 0:
+        return video_path_converted
