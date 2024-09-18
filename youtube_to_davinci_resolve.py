@@ -5,11 +5,14 @@ from pathlib import Path
 import yt_dlp
 
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
+# TODO convert_sfx() function
+# TODO delete_file() function.
 # TODO emojis in video_title may cause issues. keep an eye on it
 # TODO move global vars to a json file
 # TODO before that convert global vars to dict so its easier to incorporate json later
+# TODO add hd and variants to 👇🏽
 UNWANTED_WORDS = [
-    'Sound', 'effect', 'for editing', 'editing', '(dl in desc)', '-', '()',
+    'sound', 'effect', 'for editing', 'editing', '(dl in desc)', '-', '()',
     "''", '.'
 ]
 SFX_KEYWORDS = [
@@ -19,7 +22,18 @@ SFX_KEYWORDS = [
 ]
 # yes im using an asmongold clip... bite me
 TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
+TEST_LINK_SFX = "https://www.youtube.com/watch?v=X_-_AMdA4eE&list=PL41KByPmtbD7Jdoe7bH8gqobDCMin4x4H&index=2"
+TEST_LINK_SFX2 = "https://www.youtube.com/watch?v=_98eA_BZZB0&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=10"
+TEST_LINK_SFX3 = "https://www.youtube.com/watch?v=Rk74KCkSCnM&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=8"
 AUTO_DELETE_TEMP = False
+SFX_TRIM_MARGIN = {
+    'aggressive': '-0.05s,0s',
+    'standard': '0s,0s',
+    'loose': '0.5s,0.5s',
+}
+SFX_SAVE_DIR = Path(
+    r"D:\Editing Stuff\SFX\Meme sound Clips, Mario, Cartoon Sounds, Funny Etc\Recent"
+)
 
 
 def get_clipboard() -> str:
@@ -84,7 +98,6 @@ def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
     # determine if clip is sfx
     if is_sfx:
         download_format = 'ba[ext=m4a]/ba[ext=aac]'  # only audio, save space
-        print("is sfx")
     else:
         download_format = 'bv+ba[ext=m4a]/ba[ext=aac]'  # best video + m4a or aac
 
@@ -106,7 +119,37 @@ def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
     # find file and return it
     if result.returncode == 0:
         # Find the downloaded file in the temp_dir
-        file = list(temp_dir.glob(f"{video_title}*"))[0]
-        return file
+        video_path_download = list(temp_dir.glob(f"{video_title}*"))[0]
+        return video_path_download
     else:
         return False
+
+
+# TODO in gui make --margin adjustable
+# FIXME save into temp folder instead. the converted file goes into save_dir
+def trim_video(video_path: Path) -> Path:
+
+    # check if save path exists
+    save_dir = SFX_SAVE_DIR if SFX_SAVE_DIR.exists(
+    ) else Path().home() / "Downloads"
+    # declare save file location, name, & extension
+    video_path_trimmed = save_dir / video_path.name
+
+    # run yt-dlp in cmd
+    result = subprocess.run(
+        [
+            'auto-editor',
+            video_path.name,
+            '--margin',
+            '-0.05s,0s',
+            '--no-open',
+            '--output',
+            f"{save_dir / video_path.stem}",
+        ],
+        cwd=fr"{video_path.parent}",
+    )
+    if result.returncode == 0:
+        return video_path_trimmed
+
+
+
