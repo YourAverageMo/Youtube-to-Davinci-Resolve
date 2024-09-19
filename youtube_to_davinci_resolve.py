@@ -84,7 +84,6 @@ def sanitize_filename(filename: str) -> str:
 
 
 def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
-    # determine if clip is sfx
     if is_sfx:
         download_format = 'ba[ext=m4a]/ba[ext=aac]'  # only audio, save space
     else:
@@ -117,9 +116,10 @@ def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
 # TODO in gui make --margin adjustable
 # FIXME save into temp folder instead. the converted file goes into save_dir
 def trim_video(video_path: Path) -> Path:
-    # declare save file location, name, & extension
-    video_path_trimmed = sfx_save_dir / video_path.name
-
+    # input video and trimmed video will have same name so put it into diff dir
+    # declare save file location, name, & extension.
+    trimmed_dir = temp_dir / "trimmed"
+    trimmed_dir.mkdir(exist_ok=True)
     # run yt-dlp in cmd
     result = subprocess.run(
         [
@@ -129,11 +129,13 @@ def trim_video(video_path: Path) -> Path:
             '-0.05s,0s',
             '--no-open',
             '--output',
-            f"{sfx_save_dir / video_path.stem}",
+            f"{trimmed_dir / video_path.stem}",  # exclude ext
         ],
         cwd=fr"{video_path.parent}",
     )
+
     if result.returncode == 0:
+        video_path_trimmed = trimmed_dir / video_path.name
         return video_path_trimmed
 
 
@@ -155,8 +157,8 @@ def convert_sfx(video_path: Path) -> Path:
 
 
 # set/make temp dir for download
-temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
 try:
+    temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
     temp_dir.mkdir(exist_ok=True)
 except FileNotFoundError:
     print(
