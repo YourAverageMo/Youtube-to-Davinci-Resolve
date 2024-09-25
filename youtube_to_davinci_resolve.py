@@ -245,3 +245,63 @@ except FileNotFoundError:
     exit()
 '''
 
+download_dir = Path().home() / "Downloads" / "Youtube"
+download_dir.mkdir(exist_ok=True)
+
+# set/make temp dir for download
+temp_dir = download_dir / "Temp"
+temp_dir.mkdir(exist_ok=True)
+
+# input video and trimmed video will have same name so put it into diff dir
+trimmed_dir = temp_dir / "trimmed"
+trimmed_dir.mkdir(exist_ok=True)
+
+# check if save path exists
+SFX_SAVE_DIR = SFX_SAVE_DIR if SFX_SAVE_DIR.exists() else download_dir
+
+is_resolve = False
+try:
+    # Attempt to get the DaVinci Resolve API object
+    resolve = app.GetResolve()
+    is_resolve = True
+    if resolve:
+        print("Script is running inside DaVinci Resolve.")
+        project_manager = resolve.GetProjectManager()
+        project = project_manager.GetCurrentProject()
+        media_pool = project.GetMediaPool()
+        root_folder = media_pool.GetRootFolder()
+        folders = root_folder.GetSubFolderList()
+        clips = root_folder.GetClipList()
+        current_timeline = project.GetCurrentTimeline()
+        project_path = guess_project_path()
+
+except NameError:
+    print("Script not running inside DaVinci Resolve.")
+    resolve = None
+
+# url = get_clipboard()
+url = TEST_LINK_SFX
+try:
+    video_title = get_video_title(url)
+except:
+    print(f"Invalid url")
+    exit()
+
+is_sfx_in_video_title = is_sfx(video_title)
+video_title = sanitize_filename(video_title)
+
+video_path_download = download_video(url, video_title, is_sfx_in_video_title)
+if is_sfx_in_video_title:
+    video_path_trimmed = trim_sfx(video_path_download)
+    video_path_download = convert_sfx(video_path_trimmed)
+else:
+    # ran out of video_path_.... names :)
+    video_path_download = convert_video(video_path_download)
+if AUTO_DELETE_TEMP:
+    delete_temp_files()
+
+if is_resolve:
+    import_to_resolve(video_path_download, is_sfx_in_video_title)
+
+print("---")
+print("Done")
