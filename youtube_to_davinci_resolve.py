@@ -188,8 +188,35 @@ def delete_temp_files():
                 print(f"Error deleting {item}: {e}")
 
 
+def guess_project_path():
+    try:
+        timeline_track_list = current_timeline.GetItemListInTrack("audio",
+                                                                  1)[:10]
+        filepaths = []
+
+        # get all none empty file paths in first 10 timeline audio tracks
+        for track in timeline_track_list:
+            try:
+                track_path = track.GetMediaPoolItem().GetClipProperty(
+                    f'File Path')
+                if track_path != '':
+                    filepaths.append(track_path)
+            except AttributeError:
+                print('AttributeError found, skipping timeline item')
+                continue
+    except IndexError:
+        print('no timeline active')
+        pass
+    if not filepaths:
+        return None
+    else:
+        most_common_file = Counter(filepaths).most_common(1)[0][0]
+        return Path(most_common_file).parent
 
 
+
+# Legacy code. moved temp to Downloads/Youtube/Temp
+# set/make temp dir for download
 '''
 try:
     temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
