@@ -145,6 +145,21 @@ def trim_sfx(video_path: Path) -> Path:
         return video_path_trimmed
 
 
+def convert_video(video_path: Path) -> Path:
+    # declare save file location, name, & extension
+    video_path_converted = download_dir / f"{video_path.stem}.mp4"
+
+    # run ffmpeg in cmd
+    result = subprocess.run(
+        [
+            'ffmpeg', '-i', video_path.name, '-c:v', 'libx264', '-c:a', 'aac',
+            str(video_path_converted)
+        ],
+        cwd=fr"{video_path.parent}",
+    )
+    if result.returncode == 0:
+        return video_path_converted
+
 
 def convert_sfx(video_path: Path) -> Path:
     # declare save file location, name, & extension
@@ -161,6 +176,17 @@ def convert_sfx(video_path: Path) -> Path:
     )
     if result.returncode == 0:
         return video_path_converted
+
+
+def delete_temp_files():
+    for item in temp_dir.rglob('*'):
+        if item.is_file():
+            try:
+                item.unlink()
+                print(f"Deleted temp item: {item}")
+            except Exception as e:
+                print(f"Error deleting {item}: {e}")
+
 
 
 
