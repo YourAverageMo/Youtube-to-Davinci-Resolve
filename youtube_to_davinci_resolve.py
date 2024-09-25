@@ -214,6 +214,23 @@ def guess_project_path():
         return Path(most_common_file).parent
 
 
+def import_to_resolve(video_path: Path, is_sfx: bool) -> bool:
+    media_pool.SetCurrentFolder(root_folder)
+    sfx_or_youtube = 'sfx' if is_sfx else 'youtube'
+
+    # search for proper import folder
+    for folder in folders:
+        folder_name = folder.GetName()
+        if folder_name.lower() == sfx_or_youtube:
+            media_pool.SetCurrentFolder(folder)
+            break
+    # if folder doesn't exist make one
+    else:  # no if statement. leave outside of for loop
+        media_pool.AddSubFolder(root_folder, sfx_or_youtube)
+
+    # import file
+    media_pool.ImportMedia([str(video_path)])
+
 
 # Legacy code. moved temp to Downloads/Youtube/Temp
 # set/make temp dir for download
