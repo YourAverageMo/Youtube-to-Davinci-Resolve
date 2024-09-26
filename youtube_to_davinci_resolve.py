@@ -4,12 +4,16 @@ import tempfile
 from pathlib import Path
 import yt_dlp
 from collections import Counter
+import json
+
 
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
 # TODO emojis in video_title may cause issues. keep an eye on it
 # TODO move global vars to a json file
 # TODO before that convert global vars to dict so its easier to incorporate json later
 # TODO add hd and variants to 👇🏽
+
+
 UNWANTED_WORDS = [
     'sound', 'effect', 'for editing', 'editing', '(dl in desc)', '-', '()',
     "''", '.'
@@ -262,6 +266,7 @@ trimmed_dir = temp_dir / "trimmed"
 trimmed_dir.mkdir(exist_ok=True)
 
 # check if save path exists
+# TODO i might have to change below to create SFX_SAVE_DIR instead
 SFX_SAVE_DIR = SFX_SAVE_DIR if SFX_SAVE_DIR.exists() else download_dir
 
 is_resolve = False
