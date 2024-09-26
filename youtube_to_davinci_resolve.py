@@ -6,7 +6,6 @@ import yt_dlp
 from collections import Counter
 
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
-# TODO use IS_GUESS_PROJECT_FOLDER
 # TODO emojis in video_title may cause issues. keep an eye on it
 # TODO move global vars to a json file
 # TODO before that convert global vars to dict so its easier to incorporate json later
@@ -36,7 +35,7 @@ SFX_SAVE_DIR = Path(
     r"D:\Editing Stuff\SFX\Meme sound Clips, Mario, Cartoon Sounds, Funny Etc\Recent"
 )
 
-IS_GUESS_PROJECT_FOLDER = False
+SAVE_TO_PROJECT_FOLDER = True
 
 
 def get_clipboard() -> str:
@@ -147,7 +146,10 @@ def trim_sfx(video_path: Path) -> Path:
 
 def convert_video(video_path: Path) -> Path:
     # declare save file location, name, & extension
-    video_path_converted = download_dir / f"{video_path.stem}.mp4"
+    if SAVE_TO_PROJECT_FOLDER and is_resolve:
+        video_path_converted = project_path / f"{video_path.stem}.mp4"
+    else:
+        video_path_converted = download_dir / f"{video_path.stem}.mp4"
 
     # run ffmpeg in cmd
     result = subprocess.run(
@@ -163,7 +165,10 @@ def convert_video(video_path: Path) -> Path:
 
 def convert_sfx(video_path: Path) -> Path:
     # declare save file location, name, & extension
-    video_path_converted = SFX_SAVE_DIR / f"{video_path.stem}.mp3"
+    if SAVE_TO_PROJECT_FOLDER and is_resolve:
+        video_path_converted = project_path / f"{video_path.stem}.mp3"
+    else:
+        video_path_converted = SFX_SAVE_DIR / f"{video_path.stem}.mp3"
 
     # run ffmpeg in cmd
     result = subprocess.run(
@@ -218,7 +223,7 @@ def import_to_resolve(video_path: Path, is_sfx: bool) -> bool:
     media_pool.SetCurrentFolder(root_folder)
     sfx_or_youtube = 'sfx' if is_sfx else 'youtube'
 
-    # search for proper import folder
+    # search for proper bin in davinci resolve
     for folder in folders:
         folder_name = folder.GetName()
         if folder_name.lower() == sfx_or_youtube:
