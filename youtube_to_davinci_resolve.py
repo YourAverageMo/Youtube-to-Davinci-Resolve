@@ -6,40 +6,77 @@ import yt_dlp
 from collections import Counter
 import json
 
-
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
 # TODO emojis in video_title may cause issues. keep an eye on it
-# TODO move global vars to a json file
-# TODO before that convert global vars to dict so its easier to incorporate json later
-# TODO add hd and variants to 👇🏽
 
 
-UNWANTED_WORDS = [
-    'sound', 'effect', 'for editing', 'editing', '(dl in desc)', '-', '()',
-    "''", '.'
-]
-SFX_KEYWORDS = [
-    'sfx',
-    'sound effect',
-    'sound effects',
-]
+def load_settings():
+    settings_file = download_dir / "settings.json"
+    # use settings file if it exists
+    if settings_file.exists():
+        try:
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+        # abort if syntax error to preserve user settings
+        except json.decoder.JSONDecodeError:
+            print(
+                "error loading user settings, please correct settings.json or delete the file and rerun to use default settings"
+            )
+            print("aborting script...")
+            exit()
+
+    # save default settings to file
+    else:
+        settings = {
+            # TODO add hd and variants to 👇🏽
+            "UNWANTED_WORDS": [
+                "sound", "effect", "for editing", "editing", "(dl in desc)",
+                "-", "()", "''", "."
+            ],
+            "SFX_KEYWORDS": ["sfx", "sound effect", "sound effects"],
+            "SFX_TRIM_MARGIN": {
+                "aggressive": "-0.05s,0s",
+                "standard": "0s,0s",
+                "loose": "0.5s,0.5s"
+            },
+            "SFX_SAVE_DIR":
+            "D:/Editing Stuff/SFX/Meme sound Clips, Mario, Cartoon Sounds, Funny Etc/Recent",
+            "AUTO_DELETE_TEMP":
+            True,
+            "SAVE_TO_PROJECT_FOLDER":
+            True
+        }
+        with open(settings_file, 'w') as f:
+            json.dump(settings, f, indent=4)
+
+    # set global settings
+    # i think its neater to use globals here than to have these in the main loop
+    global UNWANTED_WORDS
+    global SFX_KEYWORDS
+    global SFX_TRIM_MARGIN
+    global SFX_SAVE_DIR
+    global AUTO_DELETE_TEMP
+    global SAVE_TO_PROJECT_FOLDER
+
+    UNWANTED_WORDS = settings["UNWANTED_WORDS"]
+    SFX_KEYWORDS = settings["SFX_KEYWORDS"]
+    SFX_TRIM_MARGIN = settings["SFX_TRIM_MARGIN"]
+    SFX_SAVE_DIR = Path(settings["SFX_SAVE_DIR"])
+    AUTO_DELETE_TEMP = settings["AUTO_DELETE_TEMP"]
+    SAVE_TO_PROJECT_FOLDER = settings["SAVE_TO_PROJECT_FOLDER"]
+
+    # cleaning memory
+    del settings
+
+    return True
+
+
 # yes im using an asmongold clip... bite me
 TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
 TEST_LINK_SFX = "https://www.youtube.com/watch?v=X_-_AMdA4eE&list=PL41KByPmtbD7Jdoe7bH8gqobDCMin4x4H&index=2"
 TEST_LINK_SFX2 = "https://www.youtube.com/watch?v=_98eA_BZZB0&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=10"
 TEST_LINK_SFX3 = "https://www.youtube.com/watch?v=Rk74KCkSCnM&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=8"
 TEST_LINK2 = "https://www.youtube.com/watch?v=qLGxQBEd948"
-AUTO_DELETE_TEMP = True
-SFX_TRIM_MARGIN = {
-    'aggressive': '-0.05s,0s',
-    'standard': '0s,0s',
-    'loose': '0.5s,0.5s',
-}
-SFX_SAVE_DIR = Path(
-    r"D:\Editing Stuff\SFX\Meme sound Clips, Mario, Cartoon Sounds, Funny Etc\Recent"
-)
-
-SAVE_TO_PROJECT_FOLDER = True
 
 
 def get_clipboard() -> str:
@@ -254,6 +291,10 @@ except FileNotFoundError:
     exit()
 '''
 
+# --
+# -- Main loop starts here
+# --
+
 download_dir = Path().home() / "Downloads" / "Youtube"
 download_dir.mkdir(exist_ok=True)
 
@@ -264,6 +305,8 @@ temp_dir.mkdir(exist_ok=True)
 # input video and trimmed video will have same name so put it into diff dir
 trimmed_dir = temp_dir / "trimmed"
 trimmed_dir.mkdir(exist_ok=True)
+
+load_settings()
 
 # check if save path exists
 # TODO i might have to change below to create SFX_SAVE_DIR instead
