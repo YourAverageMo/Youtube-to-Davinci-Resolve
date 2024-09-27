@@ -9,6 +9,13 @@ import json
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
 # TODO emojis in video_title may cause issues. keep an eye on it
 
+# yes im using an asmongold clip... bite me
+TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
+TEST_LINK_SFX = "https://www.youtube.com/watch?v=X_-_AMdA4eE&list=PL41KByPmtbD7Jdoe7bH8gqobDCMin4x4H&index=2"
+TEST_LINK_SFX2 = "https://www.youtube.com/watch?v=_98eA_BZZB0&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=10"
+TEST_LINK_SFX3 = "https://www.youtube.com/watch?v=Rk74KCkSCnM&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=8"
+TEST_LINK2 = "https://www.youtube.com/watch?v=qLGxQBEd948"
+
 
 def load_settings():
     settings_file = download_dir / "settings.json"
@@ -69,14 +76,6 @@ def load_settings():
     del settings
 
     return True
-
-
-# yes im using an asmongold clip... bite me
-TEST_LINK = "https://www.youtube.com/watch?v=Xgf8UBxKii0"
-TEST_LINK_SFX = "https://www.youtube.com/watch?v=X_-_AMdA4eE&list=PL41KByPmtbD7Jdoe7bH8gqobDCMin4x4H&index=2"
-TEST_LINK_SFX2 = "https://www.youtube.com/watch?v=_98eA_BZZB0&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=10"
-TEST_LINK_SFX3 = "https://www.youtube.com/watch?v=Rk74KCkSCnM&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=8"
-TEST_LINK2 = "https://www.youtube.com/watch?v=qLGxQBEd948"
 
 
 def get_clipboard() -> str:
