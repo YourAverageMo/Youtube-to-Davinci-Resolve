@@ -7,6 +7,9 @@ from collections import Counter
 import json
 
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
+
+# NOTE keeping everything in 1 file for user accessability
+
 # TODO emojis in video_title may cause issues. keep an eye on it
 
 # yes im using an asmongold clip... bite me
@@ -15,6 +18,8 @@ TEST_LINK_SFX = "https://www.youtube.com/watch?v=X_-_AMdA4eE&list=PL41KByPmtbD7J
 TEST_LINK_SFX2 = "https://www.youtube.com/watch?v=_98eA_BZZB0&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=10"
 TEST_LINK_SFX3 = "https://www.youtube.com/watch?v=Rk74KCkSCnM&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=8"
 TEST_LINK2 = "https://www.youtube.com/watch?v=qLGxQBEd948"
+
+# TODO save_settings()
 
 
 def load_settings():
@@ -35,7 +40,7 @@ def load_settings():
     # save default settings to file
     else:
         settings = {
-            # TODO add hd and variants to 👇🏽
+            # TODO add 👇🏽 hd and variants, popular, meme, free, free to use
             "UNWANTED_WORDS": [
                 "sound", "effect", "for editing", "editing", "(dl in desc)",
                 "-", "()", "''", "."
@@ -51,7 +56,9 @@ def load_settings():
             "AUTO_DELETE_TEMP":
             True,
             "SAVE_TO_PROJECT_FOLDER":
-            True
+            True,
+            "SKIP_GUI":
+            False,
         }
         with open(settings_file, 'w') as f:
             json.dump(settings, f, indent=4)
@@ -64,13 +71,22 @@ def load_settings():
     global SFX_SAVE_DIR
     global AUTO_DELETE_TEMP
     global SAVE_TO_PROJECT_FOLDER
+    global SKIP_GUI
 
-    UNWANTED_WORDS = settings["UNWANTED_WORDS"]
-    SFX_KEYWORDS = settings["SFX_KEYWORDS"]
-    SFX_TRIM_MARGIN = settings["SFX_TRIM_MARGIN"]
-    SFX_SAVE_DIR = Path(settings["SFX_SAVE_DIR"])
-    AUTO_DELETE_TEMP = settings["AUTO_DELETE_TEMP"]
-    SAVE_TO_PROJECT_FOLDER = settings["SAVE_TO_PROJECT_FOLDER"]
+    try:
+        UNWANTED_WORDS = settings["UNWANTED_WORDS"]
+        SFX_KEYWORDS = settings["SFX_KEYWORDS"]
+        SFX_TRIM_MARGIN = settings["SFX_TRIM_MARGIN"]
+        SFX_SAVE_DIR = Path(settings["SFX_SAVE_DIR"])
+        AUTO_DELETE_TEMP = settings["AUTO_DELETE_TEMP"]
+        SAVE_TO_PROJECT_FOLDER = settings["SAVE_TO_PROJECT_FOLDER"]
+        SKIP_GUI = settings["SKIP_GUI"]
+    except KeyError:
+        print(
+            "error loading user settings (missing setting), please correct settings.json or delete the file and rerun to use default settings"
+        )
+        print("aborting script...")
+        exit()
 
     # cleaning memory
     del settings
@@ -205,10 +221,7 @@ def convert_video(video_path: Path) -> Path:
 
 def convert_sfx(video_path: Path) -> Path:
     # declare save file location, name, & extension
-    if SAVE_TO_PROJECT_FOLDER and is_resolve:
-        video_path_converted = project_path / f"{video_path.stem}.mp3"
-    else:
-        video_path_converted = SFX_SAVE_DIR / f"{video_path.stem}.mp3"
+    video_path_converted = SFX_SAVE_DIR / f"{video_path.stem}.mp3"
 
     # run ffmpeg in cmd
     result = subprocess.run(
@@ -311,6 +324,8 @@ load_settings()
 # TODO i might have to change below to create SFX_SAVE_DIR instead
 SFX_SAVE_DIR = SFX_SAVE_DIR if SFX_SAVE_DIR.exists() else download_dir
 
+url = get_clipboard()
+
 is_resolve = False
 try:
     # Attempt to get the DaVinci Resolve API object
@@ -318,6 +333,11 @@ try:
     is_resolve = True
     if resolve:
         print("Script is running inside DaVinci Resolve.")
+        if SKIP_GUI:
+            # i no nested if statement... bite me.
+            print(
+                f'Skipping user interface, to re-enable set SKIP_GUI to false in settings.json at {download_dir}'
+            )
         project_manager = resolve.GetProjectManager()
         project = project_manager.GetCurrentProject()
         media_pool = project.GetMediaPool()
@@ -326,34 +346,46 @@ try:
         clips = root_folder.GetClipList()
         current_timeline = project.GetCurrentTimeline()
         project_path = guess_project_path()
+        ui = fusion.UIManager
+        dispatcher = bmd.UIDispatcher(ui)
 
 except NameError:
     print("Script not running inside DaVinci Resolve.")
     resolve = None
 
-# url = get_clipboard()
-url = TEST_LINK_SFX
+if resolve and not SKIP_GUI:
+    # open_user_interface is just a way of loading and saving settings. ezpz
+    open_user_interface()
+
+print('Fetching video title...')
 try:
     video_title = get_video_title(url)
 except:
     print(f"Invalid url")
     exit()
 
+print('Checking for SFX keywords in title...')
 is_sfx_in_video_title = is_sfx(video_title)
 video_title = sanitize_filename(video_title)
 
 video_path_download = download_video(url, video_title, is_sfx_in_video_title)
 if is_sfx_in_video_title:
+    print('SFX Keyword found in title, processing to trim and convert...')
     video_path_trimmed = trim_sfx(video_path_download)
     video_path_download = convert_sfx(video_path_trimmed)
 else:
+    print('No SFX Keyword found in title, processing to convert...')
     # ran out of video_path_.... names :)
     video_path_download = convert_video(video_path_download)
 if AUTO_DELETE_TEMP:
+    print('`Auto Delete Temp Files` enabled, deleting temp files')
     delete_temp_files()
 
 if is_resolve:
+    print('Importing file...')
     import_to_resolve(video_path_download, is_sfx_in_video_title)
 
 print("---")
-print("Done")
+print(
+    "Aaaannnd thats that! Hopefully it worked, happy editing. Remember if you wanna support me I love coffee!"
+)
