@@ -32,7 +32,7 @@ def load_settings():
         # abort if syntax error to preserve user settings
         except json.decoder.JSONDecodeError:
             print(
-                "error loading user settings, please correct settings.json or delete the file and rerun to use default settings"
+                "error loading user settings (syntax error), please correct settings.json or delete the file and rerun to use default settings"
             )
             print("aborting script...")
             exit()
@@ -46,11 +46,11 @@ def load_settings():
                 "-", "()", "''", "."
             ],
             "SFX_KEYWORDS": ["sfx", "sound effect", "sound effects"],
-            "SFX_TRIM_MARGIN": {
-                "aggressive": "-0.05s,0s",
-                "standard": "0s,0s",
-                "loose": "0.5s,0.5s"
-            },
+            # 0 "loose": "0.5s,0.5s"
+            # 1 "standard": "0s,0s",
+            # 2 "aggressive": "-0.05s,0s",
+            "SFX_TRIM_MARGIN":
+            2,
             "SFX_SAVE_DIR":
             "D:/Editing Stuff/SFX/Meme sound Clips, Mario, Cartoon Sounds, Funny Etc/Recent",
             "AUTO_DELETE_TEMP":
@@ -302,6 +302,200 @@ except FileNotFoundError:
     )
     exit()
 '''
+
+# --
+# -- GUI building starts here
+# --
+
+
+def open_user_interface():
+
+    # element IDs
+    win_id = 'main_window'
+    coffee_button = 'coffee_button'
+    start_button = 'start_button'
+    url_input = 'url_box'
+    sfx_dir_input = 'sfx_dir_input'
+    sfx_browse_button = 'sfx_browse_button'
+    auto_delete_check = 'auto_delete_check'
+    save_to_project_check = 'save_to_project_check'
+    trim_margin_dropdown = 'trim_margin_dropdown'
+    skip_gui_check = 'skip_ui'
+    unwanted_words_input = 'unwanted_words_input'
+    sfx_keywords_input = 'sfx_keywords'
+
+    # check for existing instance
+    win = ui.FindWindow(win_id)
+    if win:
+        win.Show()
+        win.Raise()
+        exit()
+
+    # window layout
+    winLayout = ui.VGroup([
+        # shameless plug section
+        ui.Label({
+            'ID':
+            'DialogBox',
+            'Text':
+            "YouTube Importer\nby Muhammed Yilmaz",
+            'Weight':
+            0,
+            'Font':
+            ui.Font({
+                'PixelSize': 24,
+                'Italic': True,
+                'Bold': True,
+            }),
+            'Alignment': {
+                'AlignHCenter': True
+            },
+            'StyleSheet':
+            'QLabel { color: white; }',
+        }),
+        ui.Button({
+            'ID': coffee_button,
+            'Text':
+            'If this plugin is useful and want to support me, consider buying me a coffee :)',
+            'Weight': 0,
+            'StyleSheet': 'QPushButton { color: #f1f17b; }'
+        }),
+        ui.VGap(5),
+
+        # Video URL Section
+        ui.Label({
+            'Text': "Video URL:",
+            'Font': ui.Font({
+                'PixelSize': 16,
+                'Bold': True,
+            }),
+            'Weight': 0,
+        }),
+        ui.Label({
+            'Text':
+            "Enter the full YouTube video URL. (This field is auto populated with your clipboard on launch)",
+            'Font': ui.Font({'PixelSize': 9}),
+            'Weight': 0,
+        }),
+        ui.LineEdit({
+            'ID': url_input,
+            'PlaceholderText': 'Enter YouTube URL',
+            'Weight': 0,
+        }),
+
+        # start button
+        ui.Button({
+            'ID': start_button,
+            'Text': 'START',
+            'Font': ui.Font({
+                'PixelSize': 16,
+                'Bold': True
+            }),
+            'Weight': 0
+        }),
+        ui.VGap(5),
+    ])
+
+    #  create window and get items
+    win = dispatcher.AddWindow(
+        {
+            'ID': win_id,
+            'WindowTitle': "YouTube Importer by Muhammed Yilmaz",
+            'Geometry': [20, 50, 550, 550],
+        }, winLayout)
+    itm = win.GetItems()
+
+    # Show window
+    win.Show()
+    dispatcher.RunLoop()
+
+
+# --
+# -- Main loop starts here
+# --
+
+download_dir = Path().home() / "Downloads" / "Youtube"
+download_dir.mkdir(exist_ok=True)
+
+# set/make temp dir for download
+temp_dir = download_dir / "Temp"
+temp_dir.mkdir(exist_ok=True)
+
+# input video and trimmed video will have same name so put it into diff dir
+trimmed_dir = temp_dir / "trimmed"
+trimmed_dir.mkdir(exist_ok=True)
+
+load_settings()
+
+# check if save path exists
+# TODO i might have to change below to create SFX_SAVE_DIR instead
+SFX_SAVE_DIR = SFX_SAVE_DIR if SFX_SAVE_DIR.exists() else download_dir
+
+url = get_clipboard()
+
+is_resolve = False
+try:
+    # Attempt to get the DaVinci Resolve API object
+    resolve = app.GetResolve()
+    is_resolve = True
+    if resolve:
+        print("Script is running inside DaVinci Resolve.")
+        if SKIP_GUI:
+            # i no nested if statement... bite me.
+            print(
+                f'Skipping user interface, to re-enable set SKIP_GUI to false in settings.json at {download_dir}'
+            )
+        project_manager = resolve.GetProjectManager()
+        project = project_manager.GetCurrentProject()
+        media_pool = project.GetMediaPool()
+        root_folder = media_pool.GetRootFolder()
+        folders = root_folder.GetSubFolderList()
+        clips = root_folder.GetClipList()
+        current_timeline = project.GetCurrentTimeline()
+        project_path = guess_project_path()
+        ui = fusion.UIManager
+        dispatcher = bmd.UIDispatcher(ui)
+
+except NameError:
+    print("Script not running inside DaVinci Resolve.")
+    resolve = None
+
+if resolve and not SKIP_GUI:
+    # open_user_interface is just a way of loading and saving settings. ezpz
+    open_user_interface()
+
+print('Fetching video title...')
+try:
+    video_title = get_video_title(url)
+except:
+    print(f"Invalid url")
+    exit()
+
+print('Checking for SFX keywords in title...')
+is_sfx_in_video_title = is_sfx(video_title)
+video_title = sanitize_filename(video_title)
+
+video_path_download = download_video(url, video_title, is_sfx_in_video_title)
+if is_sfx_in_video_title:
+    print('SFX Keyword found in title, processing to trim and convert...')
+    video_path_trimmed = trim_sfx(video_path_download)
+    video_path_download = convert_sfx(video_path_trimmed)
+else:
+    print('No SFX Keyword found in title, processing to convert...')
+    # ran out of video_path_.... names :)
+    video_path_download = convert_video(video_path_download)
+if AUTO_DELETE_TEMP:
+    print('`Auto Delete Temp Files` enabled, deleting temp files')
+    delete_temp_files()
+
+if is_resolve:
+    print('Importing file...')
+    import_to_resolve(video_path_download, is_sfx_in_video_title)
+
+print("---")
+print(
+    "Aaaannnd thats that! Hopefully it worked, happy editing. Remember if you wanna support me I love coffee!"
+)
 
 # --
 # -- Main loop starts here
