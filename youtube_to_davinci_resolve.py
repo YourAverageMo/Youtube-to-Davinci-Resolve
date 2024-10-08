@@ -1,14 +1,11 @@
 import subprocess
 import re
-import tempfile
 from pathlib import Path
 import yt_dlp
 from collections import Counter
 import json
 
 # NOTE auto-editor doesnt seem to play nice with audio files unless you use your own ffmpeg path. so to keep this script user friendly workflow for sfx will be: download video with only audio as a video file > run auto-editor on it returning a video file > ffmpeg convert to mp3
-
-# NOTE keeping everything in 1 file for user accessability
 
 # TODO emojis in video_title may cause issues. keep an eye on it
 
@@ -18,8 +15,6 @@ TEST_LINK_SFX = "https://www.youtube.com/watch?v=X_-_AMdA4eE&list=PL41KByPmtbD7J
 TEST_LINK_SFX2 = "https://www.youtube.com/watch?v=_98eA_BZZB0&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=10"
 TEST_LINK_SFX3 = "https://www.youtube.com/watch?v=Rk74KCkSCnM&list=PLGJIkLnskxQNfvMPkaRmb8KQLF3qb9Qoz&index=8"
 TEST_LINK2 = "https://www.youtube.com/watch?v=qLGxQBEd948"
-
-# TODO save_settings()
 
 
 def load_settings():
@@ -202,7 +197,7 @@ def trim_sfx(video_path: Path) -> Path:
 
 def convert_video(video_path: Path) -> Path:
     # declare save file location, name, & extension
-    if SAVE_TO_PROJECT_FOLDER and is_resolve:
+    if SAVE_TO_PROJECT_FOLDER and is_resolve and project_path is not None:
         video_path_converted = project_path / f"{video_path.stem}.mp4"
     else:
         video_path_converted = download_dir / f"{video_path.stem}.mp4"
@@ -264,7 +259,10 @@ def guess_project_path():
                 continue
     except IndexError:
         print('no timeline active')
-        pass
+        return None
+    except AttributeError:
+        print('no timeline active')
+        return None
     if not filepaths:
         return None
     else:
