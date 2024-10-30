@@ -113,7 +113,7 @@ def is_sfx(video_title: str) -> bool:
 
 def sanitize_filename(filename: str) -> str:
     # Remove any Windows unsafe characters
-    filename = re.sub(r'[\/:*?"<>|]', '', filename)
+    filename = re.sub(r'[^a-zA-Z0-9\s]', '', filename)
 
     # Remove extra spaces and trim
     filename = ' '.join(filename.split())
@@ -142,7 +142,7 @@ def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
         download_format = 'ba[ext=m4a]/ba[ext=aac]'  # only audio, save space
         save_dir = temp_dir
     else:
-        download_format = 'bv+ba[ext=m4a]/ba[ext=aac]'  # best video + m4a or aac
+        download_format = 'bv*[ext=mp4]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=aac]/b[ext=mp4]'  # best video + m4a or aac
         save_dir = temp_dir
 
     # delete file if already exists. i know... bite me
@@ -205,7 +205,8 @@ def convert_video(video_path: Path) -> Path:
     # run ffmpeg in cmd
     result = subprocess.run(
         [
-            'ffmpeg', '-i', video_path.name, '-c:v', 'libx264', '-c:a', 'aac',
+            'ffmpeg', '-i', video_path.name, '-c:v', 'libx264', '-preset',
+            'fast', '-c:a', 'aac',
             str(video_path_converted)
         ],
         cwd=fr"{video_path.parent}",
