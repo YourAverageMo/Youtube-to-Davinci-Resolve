@@ -1,7 +1,6 @@
 import subprocess
 import re
 from pathlib import Path
-import yt_dlp
 from collections import Counter
 import json
 
@@ -98,15 +97,22 @@ def get_clipboard() -> str:
 
 
 def get_video_title(url: str) -> str:
-    ydl_opts = {
-        "quiet": True,
-        "noplaylist": True,
-    }
-    # Extract info without downloading
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
+    try:
+        result = subprocess.run(
+            ["yt-dlp", "--no-playlist", "--print", "title", url],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        title = result.stdout.strip()
+    except subprocess.CalledProcessError:
+        print("Warning: yt-dlp failed to extract title; continuing with fallback")
+        return "No title found"
 
-    return info.get("title", "No title found")
+    if not title:
+        return "No title found"
+
+    return title
 
 
 def is_sfx(video_title: str) -> bool:
@@ -266,7 +272,7 @@ def guess_project_path():
         # get all none empty file paths in first 10 timeline audio tracks
         for track in timeline_track_list:
             try:
-                track_path = track.GetMediaPoolItem().GetClipProperty(f"File Path")
+                track_path = track.GetMediaPoolItem().GetClipProperty("File Path")
                 if track_path != "":
                     filepaths.append(track_path)
             except AttributeError:
@@ -322,6 +328,10 @@ except FileNotFoundError:
 
 
 def open_user_interface():
+
+    if ui is None or dispatcher is None:
+        print("Resolve UI is unavailable; skipping user interface.")
+        return False
 
     # element IDs
     win_id = "main_window"
@@ -632,6 +642,7 @@ def open_user_interface():
     # Show window
     win.Show()
     dispatcher.RunLoop()
+    return True
 
 
 # --
@@ -658,11 +669,15 @@ SFX_SAVE_DIR = SFX_SAVE_DIR if SFX_SAVE_DIR.exists() else download_dir
 url = get_clipboard()
 
 is_resolve = False
+ui = None
+dispatcher = None
+fusion = None
+project_path = None
 try:
     # Attempt to get the DaVinci Resolve API object
     resolve = app.GetResolve()
-    is_resolve = True
     if resolve:
+        is_resolve = True
         print("Script is running inside DaVinci Resolve.")
         if SKIP_GUI:
             # i no nested if statement... bite me.
@@ -677,14 +692,24 @@ try:
         clips = root_folder.GetClipList()
         current_timeline = project.GetCurrentTimeline()
         project_path = guess_project_path()
-        ui = fusion.UIManager
-        dispatcher = bmd.UIDispatcher(ui)
+        fusion = getattr(resolve, "Fusion", None)
+        fusion = fusion() if callable(fusion) else fusion
+        if fusion is not None:
+            ui = getattr(fusion, "UIManager", None)
+            if ui is not None:
+                dispatcher = bmd.UIDispatcher(ui)
+            elif not SKIP_GUI:
+                print(
+                    "Resolve UI manager is unavailable; continuing without the settings window."
+                )
+        elif not SKIP_GUI:
+            print("Fusion API is unavailable; continuing without the settings window.")
 
 except NameError:
     print("Script not running inside DaVinci Resolve.")
     resolve = None
 
-if resolve and not SKIP_GUI:
+if resolve and not SKIP_GUI and ui is not None and dispatcher is not None:
     # open_user_interface is just a way of loading and saving settings. ezpz
     open_user_interface()
 
@@ -692,7 +717,7 @@ print("Fetching video title...")
 try:
     video_title = get_video_title(url)
 except:
-    print(f"Invalid url")
+    print("Invalid url")
     exit()
 
 print("Checking for SFX keywords in title...")
