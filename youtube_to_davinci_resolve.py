@@ -22,7 +22,7 @@ def load_settings():
     # use settings file if it exists
     if settings_file.exists():
         try:
-            with open(settings_file, 'r') as f:
+            with open(settings_file, "r") as f:
                 settings = json.load(f)
         # abort if syntax error to preserve user settings
         except json.decoder.JSONDecodeError:
@@ -37,25 +37,27 @@ def load_settings():
         settings = {
             # TODO add 👇🏽 hd and variants, popular, meme, free, free to use
             "UNWANTED_WORDS": [
-                "sound", "effect", "for editing", "editing", "(dl in desc)",
-                "-", "()", "''", "."
+                "sound",
+                "effect",
+                "for editing",
+                "editing",
+                "(dl in desc)",
+                "-",
+                "()",
+                "''",
+                ".",
             ],
             "SFX_KEYWORDS": ["sfx", "sound effect", "sound effects"],
             # 0 "loose": "0.5s,0.5s"
             # 1 "standard": "0s,0s",
             # 2 "aggressive": "-0.05s,0s",
-            "SFX_TRIM_MARGIN":
-            2,
-            "SFX_SAVE_DIR":
-            "D:/Editing Stuff/SFX/Meme sound Clips, Mario, Cartoon Sounds, Funny Etc/Recent",
-            "AUTO_DELETE_TEMP":
-            True,
-            "SAVE_TO_PROJECT_FOLDER":
-            True,
-            "SKIP_GUI":
-            False,
+            "SFX_TRIM_MARGIN": 2,
+            "SFX_SAVE_DIR": "D:/Editing Stuff/SFX/Meme sound Clips, Mario, Cartoon Sounds, Funny Etc/Recent",
+            "AUTO_DELETE_TEMP": True,
+            "SAVE_TO_PROJECT_FOLDER": True,
+            "SKIP_GUI": False,
         }
-        with open(settings_file, 'w') as f:
+        with open(settings_file, "w") as f:
             json.dump(settings, f, indent=4)
 
     # set global settings
@@ -97,14 +99,14 @@ def get_clipboard() -> str:
 
 def get_video_title(url: str) -> str:
     ydl_opts = {
-        'quiet': True,
-        'noplaylist': True,
+        "quiet": True,
+        "noplaylist": True,
     }
     # Extract info without downloading
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 
-    return info.get('title', 'No title found')
+    return info.get("title", "No title found")
 
 
 def is_sfx(video_title: str) -> bool:
@@ -113,18 +115,18 @@ def is_sfx(video_title: str) -> bool:
 
 def sanitize_filename(filename: str) -> str:
     # Remove any Windows unsafe characters
-    filename = re.sub(r'[^a-zA-Z0-9\s]', '', filename)
+    filename = re.sub(r"[^a-zA-Z0-9\s]", "", filename)
 
     # Remove extra spaces and trim
-    filename = ' '.join(filename.split())
+    filename = " ".join(filename.split())
 
     # Remove specific words
     for phrase in UNWANTED_WORDS:
         pattern = re.compile(re.escape(phrase), re.IGNORECASE)
-        filename = pattern.sub('', filename)
+        filename = pattern.sub("", filename)
 
     # Remove extra spaces left after removing words
-    filename = ' '.join(filename.split())
+    filename = " ".join(filename.split())
     filename = filename.title()
 
     # max filename length
@@ -132,17 +134,17 @@ def sanitize_filename(filename: str) -> str:
         filename = filename[:99]
 
     if not filename:
-        filename = 'Untitled'
+        filename = "Untitled"
 
     return filename
 
 
 def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
     if is_sfx:
-        download_format = 'ba[ext=m4a]/ba[ext=aac]'  # only audio, save space
+        download_format = "ba[ext=m4a]/ba[ext=aac]"  # only audio, save space
         save_dir = temp_dir
     else:
-        download_format = 'bv*[ext=mp4]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=aac]/b[ext=mp4]'  # best video + m4a or aac
+        download_format = "bv*[ext=mp4]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=aac]/b[ext=mp4]"  # best video + m4a or aac
         save_dir = temp_dir
 
     # delete file if already exists. i know... bite me
@@ -152,19 +154,21 @@ def download_video(url: str, video_title: str, is_sfx: bool = False) -> Path:
         print(f"Deleted file: {some_random_variable_name}")
 
     # run yt-dlp in cmd
-    result = subprocess.run([
-        'yt-dlp',
-        '--no-playlist',  # currently no playlists maybe future
-        '--format',
-        download_format,
-        '--remux-video',
-        'mp4',
-        '-P',
-        save_dir,
-        '--output',
-        f"{video_title}.%(ext)s",
-        url,
-    ])
+    result = subprocess.run(
+        [
+            "yt-dlp",
+            "--no-playlist",  # currently no playlists maybe future
+            "--format",
+            download_format,
+            "--remux-video",
+            "mp4",
+            "-P",
+            save_dir,
+            "--output",
+            f"{video_title}.%(ext)s",
+            url,
+        ]
+    )
 
     # find file and return it
     if result.returncode == 0:
@@ -179,15 +183,15 @@ def trim_sfx(video_path: Path) -> Path:
     # run yt-dlp in cmd
     result = subprocess.run(
         [
-            'auto-editor',
+            "auto-editor",
             video_path.name,
-            '--margin',
-            '-0.05s,0s',
-            '--no-open',
-            '--output',
+            "--margin",
+            "-0.05s,0s",
+            "--no-open",
+            "--output",
             f"{trimmed_dir / video_path.stem}",  # exclude ext
         ],
-        cwd=fr"{video_path.parent}",
+        cwd=rf"{video_path.parent}",
     )
 
     if result.returncode == 0:
@@ -205,11 +209,18 @@ def convert_video(video_path: Path) -> Path:
     # run ffmpeg in cmd
     result = subprocess.run(
         [
-            'ffmpeg', '-i', video_path.name, '-c:v', 'libx264', '-preset',
-            'fast', '-c:a', 'aac',
-            str(video_path_converted)
+            "ffmpeg",
+            "-i",
+            video_path.name,
+            "-c:v",
+            "libx264",
+            "-preset",
+            "fast",
+            "-c:a",
+            "aac",
+            str(video_path_converted),
         ],
-        cwd=fr"{video_path.parent}",
+        cwd=rf"{video_path.parent}",
     )
     if result.returncode == 0:
         return video_path_converted
@@ -222,18 +233,23 @@ def convert_sfx(video_path: Path) -> Path:
     # run ffmpeg in cmd
     result = subprocess.run(
         [
-            'ffmpeg', '-i', video_path.name, '-c:a', 'libmp3lame', '-b:a',
-            '320k',
-            str(video_path_converted)
+            "ffmpeg",
+            "-i",
+            video_path.name,
+            "-c:a",
+            "libmp3lame",
+            "-b:a",
+            "320k",
+            str(video_path_converted),
         ],
-        cwd=fr"{video_path.parent}",
+        cwd=rf"{video_path.parent}",
     )
     if result.returncode == 0:
         return video_path_converted
 
 
 def delete_temp_files():
-    for item in temp_dir.rglob('*'):
+    for item in temp_dir.rglob("*"):
         if item.is_file():
             try:
                 item.unlink()
@@ -244,25 +260,23 @@ def delete_temp_files():
 
 def guess_project_path():
     try:
-        timeline_track_list = current_timeline.GetItemListInTrack("audio",
-                                                                  1)[:10]
+        timeline_track_list = current_timeline.GetItemListInTrack("audio", 1)[:10]
         filepaths = []
 
         # get all none empty file paths in first 10 timeline audio tracks
         for track in timeline_track_list:
             try:
-                track_path = track.GetMediaPoolItem().GetClipProperty(
-                    f'File Path')
-                if track_path != '':
+                track_path = track.GetMediaPoolItem().GetClipProperty(f"File Path")
+                if track_path != "":
                     filepaths.append(track_path)
             except AttributeError:
-                print('AttributeError found, skipping timeline item')
+                print("AttributeError found, skipping timeline item")
                 continue
     except IndexError:
-        print('no timeline active')
+        print("no timeline active")
         return None
     except AttributeError:
-        print('no timeline active')
+        print("no timeline active")
         return None
     if not filepaths:
         return None
@@ -273,7 +287,7 @@ def guess_project_path():
 
 def import_to_resolve(video_path: Path, is_sfx: bool) -> bool:
     media_pool.SetCurrentFolder(root_folder)
-    sfx_or_youtube = 'sfx' if is_sfx else 'youtube'
+    sfx_or_youtube = "sfx" if is_sfx else "youtube"
 
     # search for proper bin in davinci resolve
     for folder in folders:
@@ -291,7 +305,7 @@ def import_to_resolve(video_path: Path, is_sfx: bool) -> bool:
 
 # Legacy code. moved temp to Downloads/Youtube/Temp
 # set/make temp dir for download
-'''
+"""
 try:
     temp_dir = Path(tempfile.gettempdir(), 'youtube_to_davinci_resolve')
     temp_dir.mkdir(exist_ok=True)
@@ -300,7 +314,7 @@ except FileNotFoundError:
         f"Your temp folder ({temp_dir.parent}) was not found. For caution, the script will not create it. please double check your temp dir and try again.\nExiting script..."
     )
     exit()
-'''
+"""
 
 # --
 # -- GUI building starts here
@@ -310,18 +324,18 @@ except FileNotFoundError:
 def open_user_interface():
 
     # element IDs
-    win_id = 'main_window'
-    coffee_button = 'coffee_button'
-    start_button = 'start_button'
-    url_input = 'url_box'
-    sfx_dir_input = 'sfx_dir_input'
-    sfx_browse_button = 'sfx_browse_button'
-    auto_delete_check = 'auto_delete_check'
-    save_to_project_check = 'save_to_project_check'
-    trim_margin_dropdown = 'trim_margin_dropdown'
-    skip_gui_check = 'skip_ui'
-    unwanted_words_input = 'unwanted_words_input'
-    sfx_keywords_input = 'sfx_keywords'
+    win_id = "main_window"
+    coffee_button = "coffee_button"
+    start_button = "start_button"
+    url_input = "url_box"
+    sfx_dir_input = "sfx_dir_input"
+    sfx_browse_button = "sfx_browse_button"
+    auto_delete_check = "auto_delete_check"
+    save_to_project_check = "save_to_project_check"
+    trim_margin_dropdown = "trim_margin_dropdown"
+    skip_gui_check = "skip_ui"
+    unwanted_words_input = "unwanted_words_input"
+    sfx_keywords_input = "sfx_keywords"
 
     # check for existing instance
     win = ui.FindWindow(win_id)
@@ -331,184 +345,213 @@ def open_user_interface():
         exit()
 
     # window layout
-    winLayout = ui.VGroup([
-        # shameless plug section
-        ui.Label({
-            'ID':
-            'DialogBox',
-            'Text':
-            "YouTube Importer\nby Muhammed Yilmaz",
-            'Weight':
-            0,
-            'Font':
-            ui.Font({
-                'PixelSize': 24,
-                'Italic': True,
-                'Bold': True,
-            }),
-            'Alignment': {
-                'AlignHCenter': True
-            },
-            'StyleSheet':
-            'QLabel { color: white; }',
-        }),
-        ui.Button({
-            'ID': coffee_button,
-            'Text':
-            'If this plugin is useful and want to support me, consider buying me a coffee :)',
-            'Weight': 0,
-            'StyleSheet': 'QPushButton { color: #f1f17b; }'
-        }),
-        ui.VGap(5),
-
-        # Video URL Section
-        ui.Label({
-            'Text': "Video URL:",
-            'Font': ui.Font({
-                'PixelSize': 16,
-                'Bold': True,
-            }),
-            'Weight': 0,
-        }),
-        ui.Label({
-            'Text':
-            "Enter the full YouTube video URL. (This field is auto populated with your clipboard on launch)",
-            'Font': ui.Font({'PixelSize': 9}),
-            'Weight': 0,
-        }),
-        ui.LineEdit({
-            'ID': url_input,
-            'PlaceholderText': 'Enter YouTube URL',
-            'Weight': 0,
-        }),
-
-        # start button
-        ui.Button({
-            'ID': start_button,
-            'Text': 'START',
-            'Font': ui.Font({
-                'PixelSize': 16,
-                'Bold': True
-            }),
-            'Weight': 0
-        }),
-        ui.VGap(5),
-
-        # Advanced Settings Header
-        ui.Label({
-            'Text': "Advanced Settings",
-            'Font': ui.Font({
-                'PixelSize': 16,
-                'Bold': True,
-            }),
-            'Weight': 0,
-        }),
-        ui.VGap(2),
-
-        # SFX Save Directory Section
-        ui.Label({
-            'Text': "SFX Save Directory:",
-            'Weight': 0,
-        }),
-        ui.Label({
-            'Text':
-            "Directory to save downloaded sound effects (Bypasses `Save To Project folder`)",
-            'Font': ui.Font({'PixelSize': 9}),
-            'Weight': 0,
-        }),
-        ui.HGroup({'Weight': 0}, [
-            ui.LineEdit({
-                'ID': sfx_dir_input,
-                'PlaceholderText': 'Choose save directory',
-                'Weight': 0.9,
-                'Enabled': False
-            }),
-            ui.Button({
-                'ID': sfx_browse_button,
-                'Text': 'Browse',
-                'Weight': 0.1
-            })
-        ]),
-        ui.VGap(2),
-
-        # Checkboxes Section
-        ui.HGroup({'Weight': 0}, [
-            ui.CheckBox({
-                'ID': auto_delete_check,
-                'Text': 'Auto Delete Temp Files?',
-                'Weight': 0.1
-            }),
-            ui.HGap(50),
-            ui.Label({
-                'Text': "SFX Trim Margin:",
-                'Weight': 0.1
-            }),
-            ui.ComboBox({
-                'ID': trim_margin_dropdown,
-                'Weight': 0.8
-            })
-        ]),
-        ui.CheckBox({
-            'ID': save_to_project_check,
-            'Text':
-            'Save to Project Folder? (Most common location of the first 10 timeline clips).',
-            'Weight': 0
-        }),
-        ui.CheckBox({
-            'ID': skip_gui_check,
-            'Text':
-            "Skip this window? (Warning to undo this you will have to change the settings file.)",
-            'Weight': 0
-        }),
-        ui.VGap(2),
-
-        # Unwanted Words and SFX Keywords Section
-        ui.HGroup([
-            ui.VGroup([
-                ui.Label({
-                    'Text': "Unwanted Words:",
-                    'Weight': 0,
-                }),
-                ui.Label({
-                    'Text':
-                    "Comma-separated words to remove from final filename",
-                    'Font': ui.Font({'PixelSize': 9}),
-                    'Weight': 0,
-                }),
-                ui.TextEdit({
-                    'ID': unwanted_words_input,
-                    'PlaceholderText': 'Enter words to exclude',
-                    'Weight': 1,
-                }),
-            ],
-                      Weight=1),
-            ui.VGroup([
-                ui.Label({
-                    'Text': "SFX Keywords:",
-                    'Weight': 0,
-                }),
-                ui.Label({
-                    'Text':
-                    "Comma-separated keywords in video title to identify as SFX",
-                    'Font': ui.Font({'PixelSize': 9}),
-                    'Weight': 0,
-                }),
-                ui.TextEdit({
-                    'ID': sfx_keywords_input,
-                    'PlaceholderText': 'Enter SFX keywords',
-                    'Weight': 1,
-                }),
-            ], )
-        ]),
-    ])
+    winLayout = ui.VGroup(
+        [
+            # shameless plug section
+            ui.Label(
+                {
+                    "ID": "DialogBox",
+                    "Text": "YouTube Importer\nby Muhammed Yilmaz",
+                    "Weight": 0,
+                    "Font": ui.Font(
+                        {
+                            "PixelSize": 24,
+                            "Italic": True,
+                            "Bold": True,
+                        }
+                    ),
+                    "Alignment": {"AlignHCenter": True},
+                    "StyleSheet": "QLabel { color: white; }",
+                }
+            ),
+            ui.Button(
+                {
+                    "ID": coffee_button,
+                    "Text": "If this plugin is useful and want to support me, consider buying me a coffee :)",
+                    "Weight": 0,
+                    "StyleSheet": "QPushButton { color: #f1f17b; }",
+                }
+            ),
+            ui.VGap(5),
+            # Video URL Section
+            ui.Label(
+                {
+                    "Text": "Video URL:",
+                    "Font": ui.Font(
+                        {
+                            "PixelSize": 16,
+                            "Bold": True,
+                        }
+                    ),
+                    "Weight": 0,
+                }
+            ),
+            ui.Label(
+                {
+                    "Text": "Enter the full YouTube video URL. (This field is auto populated with your clipboard on launch)",
+                    "Font": ui.Font({"PixelSize": 9}),
+                    "Weight": 0,
+                }
+            ),
+            ui.LineEdit(
+                {
+                    "ID": url_input,
+                    "PlaceholderText": "Enter YouTube URL",
+                    "Weight": 0,
+                }
+            ),
+            # start button
+            ui.Button(
+                {
+                    "ID": start_button,
+                    "Text": "START",
+                    "Font": ui.Font({"PixelSize": 16, "Bold": True}),
+                    "Weight": 0,
+                }
+            ),
+            ui.VGap(5),
+            # Advanced Settings Header
+            ui.Label(
+                {
+                    "Text": "Advanced Settings",
+                    "Font": ui.Font(
+                        {
+                            "PixelSize": 16,
+                            "Bold": True,
+                        }
+                    ),
+                    "Weight": 0,
+                }
+            ),
+            ui.VGap(2),
+            # SFX Save Directory Section
+            ui.Label(
+                {
+                    "Text": "SFX Save Directory:",
+                    "Weight": 0,
+                }
+            ),
+            ui.Label(
+                {
+                    "Text": "Directory to save downloaded sound effects (Bypasses `Save To Project folder`)",
+                    "Font": ui.Font({"PixelSize": 9}),
+                    "Weight": 0,
+                }
+            ),
+            ui.HGroup(
+                {"Weight": 0},
+                [
+                    ui.LineEdit(
+                        {
+                            "ID": sfx_dir_input,
+                            "PlaceholderText": "Choose save directory",
+                            "Weight": 0.9,
+                            "Enabled": False,
+                        }
+                    ),
+                    ui.Button(
+                        {"ID": sfx_browse_button, "Text": "Browse", "Weight": 0.1}
+                    ),
+                ],
+            ),
+            ui.VGap(2),
+            # Checkboxes Section
+            ui.HGroup(
+                {"Weight": 0},
+                [
+                    ui.CheckBox(
+                        {
+                            "ID": auto_delete_check,
+                            "Text": "Auto Delete Temp Files?",
+                            "Weight": 0.1,
+                        }
+                    ),
+                    ui.HGap(50),
+                    ui.Label({"Text": "SFX Trim Margin:", "Weight": 0.1}),
+                    ui.ComboBox({"ID": trim_margin_dropdown, "Weight": 0.8}),
+                ],
+            ),
+            ui.CheckBox(
+                {
+                    "ID": save_to_project_check,
+                    "Text": "Save to Project Folder? (Most common location of the first 10 timeline clips).",
+                    "Weight": 0,
+                }
+            ),
+            ui.CheckBox(
+                {
+                    "ID": skip_gui_check,
+                    "Text": "Skip this window? (Warning to undo this you will have to change the settings file.)",
+                    "Weight": 0,
+                }
+            ),
+            ui.VGap(2),
+            # Unwanted Words and SFX Keywords Section
+            ui.HGroup(
+                [
+                    ui.VGroup(
+                        [
+                            ui.Label(
+                                {
+                                    "Text": "Unwanted Words:",
+                                    "Weight": 0,
+                                }
+                            ),
+                            ui.Label(
+                                {
+                                    "Text": "Comma-separated words to remove from final filename",
+                                    "Font": ui.Font({"PixelSize": 9}),
+                                    "Weight": 0,
+                                }
+                            ),
+                            ui.TextEdit(
+                                {
+                                    "ID": unwanted_words_input,
+                                    "PlaceholderText": "Enter words to exclude",
+                                    "Weight": 1,
+                                }
+                            ),
+                        ],
+                        Weight=1,
+                    ),
+                    ui.VGroup(
+                        [
+                            ui.Label(
+                                {
+                                    "Text": "SFX Keywords:",
+                                    "Weight": 0,
+                                }
+                            ),
+                            ui.Label(
+                                {
+                                    "Text": "Comma-separated keywords in video title to identify as SFX",
+                                    "Font": ui.Font({"PixelSize": 9}),
+                                    "Weight": 0,
+                                }
+                            ),
+                            ui.TextEdit(
+                                {
+                                    "ID": sfx_keywords_input,
+                                    "PlaceholderText": "Enter SFX keywords",
+                                    "Weight": 1,
+                                }
+                            ),
+                        ],
+                    ),
+                ]
+            ),
+        ]
+    )
 
     #  create window and get items
     win = dispatcher.AddWindow(
         {
-            'ID': win_id,
-            'WindowTitle': "YouTube Importer by Muhammed Yilmaz",
-            'Geometry': [20, 50, 550, 550],
-        }, winLayout)
+            "ID": win_id,
+            "WindowTitle": "YouTube Importer by Muhammed Yilmaz",
+            "Geometry": [20, 50, 550, 550],
+        },
+        winLayout,
+    )
     itm = win.GetItems()
 
     # populate fields
@@ -516,8 +559,8 @@ def open_user_interface():
     itm[trim_margin_dropdown].AddItem("Standard")
     itm[trim_margin_dropdown].AddItem("Aggressive")
     itm[trim_margin_dropdown].CurrentIndex = SFX_TRIM_MARGIN
-    itm[unwanted_words_input].SetPlainText(', '.join(UNWANTED_WORDS))
-    itm[sfx_keywords_input].SetPlainText(', '.join(SFX_KEYWORDS))
+    itm[unwanted_words_input].SetPlainText(", ".join(UNWANTED_WORDS))
+    itm[sfx_keywords_input].SetPlainText(", ".join(SFX_KEYWORDS))
     itm[sfx_dir_input].Text = str(SFX_SAVE_DIR)
     itm[auto_delete_check].Checked = AUTO_DELETE_TEMP
     itm[save_to_project_check].Checked = SAVE_TO_PROJECT_FOLDER
@@ -542,19 +585,17 @@ def open_user_interface():
         if itm[sfx_keywords_input].PlainText:
             # sorry hard to read. split() text by ',' then strip() then list
             settings["SFX_KEYWORDS"] = [
-                word.strip()
-                for word in itm[sfx_keywords_input].PlainText.split(',')
+                word.strip() for word in itm[sfx_keywords_input].PlainText.split(",")
             ]
 
         # if text is not empty
         if itm[unwanted_words_input].PlainText:
             # sorry hard to read. split() text by ',' then strip() then list
             settings["UNWANTED_WORDS"] = [
-                word.strip()
-                for word in itm[unwanted_words_input].PlainText.split(',')
+                word.strip() for word in itm[unwanted_words_input].PlainText.split(",")
             ]
 
-        with open(settings_file, 'w') as f:
+        with open(settings_file, "w") as f:
             json.dump(settings, f, indent=4)
 
         return True
@@ -579,6 +620,7 @@ def open_user_interface():
 
     def on_coffee_button(ev):
         import webbrowser
+
         webbrowser.open("https://www.youtube.com")
 
     # event handlers
@@ -625,7 +667,7 @@ try:
         if SKIP_GUI:
             # i no nested if statement... bite me.
             print(
-                f'Skipping user interface, to re-enable set SKIP_GUI to false in settings.json at {download_dir}'
+                f"Skipping user interface, to re-enable set SKIP_GUI to false in settings.json at {download_dir}"
             )
         project_manager = resolve.GetProjectManager()
         project = project_manager.GetCurrentProject()
@@ -646,32 +688,32 @@ if resolve and not SKIP_GUI:
     # open_user_interface is just a way of loading and saving settings. ezpz
     open_user_interface()
 
-print('Fetching video title...')
+print("Fetching video title...")
 try:
     video_title = get_video_title(url)
 except:
     print(f"Invalid url")
     exit()
 
-print('Checking for SFX keywords in title...')
+print("Checking for SFX keywords in title...")
 is_sfx_in_video_title = is_sfx(video_title)
 video_title = sanitize_filename(video_title)
 
 video_path_download = download_video(url, video_title, is_sfx_in_video_title)
 if is_sfx_in_video_title:
-    print('SFX Keyword found in title, processing to trim and convert...')
+    print("SFX Keyword found in title, processing to trim and convert...")
     video_path_trimmed = trim_sfx(video_path_download)
     video_path_download = convert_sfx(video_path_trimmed)
 else:
-    print('No SFX Keyword found in title, processing to convert...')
+    print("No SFX Keyword found in title, processing to convert...")
     # ran out of video_path_.... names :)
     video_path_download = convert_video(video_path_download)
 if AUTO_DELETE_TEMP:
-    print('`Auto Delete Temp Files` enabled, deleting temp files')
+    print("`Auto Delete Temp Files` enabled, deleting temp files")
     delete_temp_files()
 
 if is_resolve:
-    print('Importing file...')
+    print("Importing file...")
     import_to_resolve(video_path_download, is_sfx_in_video_title)
 
 print("---")
